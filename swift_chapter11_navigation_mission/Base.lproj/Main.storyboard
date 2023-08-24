@@ -128,7 +128,7 @@
                     </view>
                     <navigationItem key="navigationItem" title="수정화면" id="Mzq-6l-tKy"/>
                     <connections>
-                        <outlet property="btnResizeImage" destination="B0A-2N-c4Z" id="4lY-H5-H4q"/>
+                        <outlet property="btnResize" destination="B0A-2N-c4Z" id="Opp-sN-0dY"/>
                         <outlet property="lblWady" destination="tf9-8n-gQ5" id="VMk-nL-rRe"/>
                         <outlet property="swlsOn" destination="kGb-JU-Asc" id="F84-Bp-tdI"/>
                         <outlet property="txMeassage" destination="P0g-vE-tWP" id="rVE-nX-ZGk"/>

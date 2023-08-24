@@ -33,6 +33,11 @@ class EditViewController: UIViewController {
         lblWady.text = textWayValues
         txMeassage.text = textMessage
         swlsOn.isOn = isOn
+        if isZoom {
+            btnResize.setTitle("확대", for: UIControl.State())
+        } else {
+            btnResize.setTitle("축소", for: UIControl.State())
+        }
     }
     
     @IBAction func btnDone(_ sender: UIButton) {

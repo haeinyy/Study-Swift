@@ -8,13 +8,14 @@
 import UIKit
 import AVFoundation
 
-class ViewController: UIViewController, AVAudioPlayerDelegate {
+class ViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate {
     
     var audioPlayer : AVAudioPlayer!
     var audioFile : URL!
     var MAX_VOLUME : Float = 10.0
     var progressTimer : Timer!
     let timePlayerSelector:Selector = #selector(ViewController.updatePlayTime)
+    let timeRecordSelector:Selector = #selector(ViewController.updateRecordTime)
     
     
     @IBOutlet var pvProgressPlay: UIProgressView!
@@ -28,8 +29,15 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
     @IBOutlet var btnRecord: UIButton!
     @IBOutlet var lblRecordTime: UILabel!
     
+    @IBOutlet var imgView: UIImageView!
+    
     var audioRecorder : AVAudioRecorder!
     var isRecordMode = false
+    
+    var imgPlay = UIImage(named: "play.png")
+    var imgStop = UIImage(named: "stop.png")
+    var imgRecord = UIImage(named: "record.png")
+    var imgPause = UIImage(named: "pause.png")
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -41,6 +49,7 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
         } else {
             initRecord()
         }
+        imgView.image = imgStop
         
     }
     
@@ -54,7 +63,38 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
     }
     
     func initRecord() {
+            let recordSettings = [
+            AVFormatIDKey : NSNumber(value: kAudioFormatAppleLossless as UInt32),
+            AVEncoderAudioQualityKey : AVAudioQuality.max.rawValue,
+            AVEncoderBitRateKey : 320000,
+            AVNumberOfChannelsKey : 2,
+            AVSampleRateKey : 44100.0] as [String : Any]
         
+        do {
+            audioRecorder = try AVAudioRecorder(url: audioFile, settings: recordSettings)
+        } catch let error as NSError {
+            print("Error-initRecord : \(error)")
+        }
+        audioRecorder.delegate = self
+        
+        slVolume.value = 1.0
+        audioPlayer.volume = slVolume.value
+        lblEndTime.text = convertNSTimeInterval2String(0)
+        lblCurrentTime.text = convertNSTimeInterval2String(0)
+        setPlayButton(false, pause: false, stop: false)
+        
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch let error as NSError {
+            print(" Error-setCategory : \(error)")
+        }
+        do {
+            try session.setActive(true)
+        } catch let error as NSError {
+            print(" Error-setActive : \(error)")
+        }
     }
     
     func initPlay() {
@@ -95,6 +135,7 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
         audioPlayer.play()
         setPlayButton(false, pause: true, stop: true)
         progressTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: timePlayerSelector, userInfo: nil, repeats: true)
+        imgView.image = imgPlay
     }
     
     @objc func updatePlayTime() {
@@ -105,6 +146,7 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
     @IBAction func btnPauseAudio(_ sender: UIButton) {
         audioPlayer.pause()
         setPlayButton(true, pause: false, stop: true)
+        imgView.image = imgPause
     }
     
     @IBAction func btnStopAudio(_ sender: UIButton) {
@@ -113,6 +155,7 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
         lblCurrentTime.text = convertNSTimeInterval2String(0)
         setPlayButton(true, pause: false, stop: false)
         progressTimer.invalidate()
+        imgView.image = imgStop
     }
     
     @IBAction func slChangedVolume(_ sender: UISlider) {
@@ -125,9 +168,44 @@ class ViewController: UIViewController, AVAudioPlayerDelegate {
     }
     
     @IBAction func swRecordMode(_ sender: UISwitch) {
+        if sender.isOn {
+            audioPlayer.stop()
+            audioPlayer.currentTime = 0
+            lblRecordTime!.text = convertNSTimeInterval2String(0)
+            isRecordMode = true
+            btnRecord.isEnabled = true
+            lblRecordTime.isEnabled = true
+        } else {
+            isRecordMode = false
+            btnRecord.isEnabled = false
+            lblRecordTime.isEnabled = false
+            lblRecordTime.text = convertNSTimeInterval2String(0)
+        }
+        selectAudioFile()
+        if !isRecordMode {
+            initPlay()
+        } else {
+            initRecord()
+        }
     }
     
     @IBAction func btnRecord(_ sender: UIButton) {
+        if (sender as AnyObject).titleLabel?.text == "Record" {
+            audioRecorder.record()
+            (sender as AnyObject).setTitle("Stop", for: UIControl.State())
+            progressTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: timeRecordSelector, userInfo: nil, repeats: true)
+            imgView.image = imgRecord
+        } else {
+            audioRecorder.stop()
+            (sender as AnyObject).setTitle("Record", for: UIControl.State())
+            btnPlay.isEnabled = true
+            initPlay()
+            imgView.image = imgStop
+        }
+    }
+    
+    @objc func updateRecordTime() {
+        lblRecordTime.text = convertNSTimeInterval2String(audioRecorder.currentTime)
     }
 }
 
